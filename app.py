@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 from flask import Flask, request, jsonify
 from model import predict
 import time
+=======
+ 
+  from flask import Flask, request, jsonify
+  from model import predict
+>>>>>>> 626616b53783c663e5bcb27ecc91db1b85ff6f41
 
 app = Flask(__name__)
 
