@@ -3,30 +3,18 @@ import time
 import pickle
 import logging
 from collections import defaultdict
+import re
 
-# =========================
-# 🔧 إعدادات
-# =========================
 app = Flask(__name__)
 
-# Logging
 logging.basicConfig(level=logging.INFO)
 
-# Rate limiting (بسيط)
 request_counts = defaultdict(int)
-RATE_LIMIT = 100  # requests لكل IP
+RATE_LIMIT = 100
 
-# =========================
-# 📥 تحميل المودل (مرة وحدة فقط)
-# =========================
 with open("model.pkl", "rb") as f:
     model, vectorizer = pickle.load(f)
 
-
-# =========================
-# 🧹 تنظيف النص (نفس المودل)
-# =========================
-import re
 def clean_text(text):
     text = str(text).lower()
     text = re.sub(r"http\S+", "", text)
@@ -34,10 +22,6 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-
-# =========================
-# 🔮 predict (بدون import model.py)
-# =========================
 def predict(text):
     text = clean_text(text)
 
@@ -68,20 +52,12 @@ def predict(text):
         "features_used": ["tfidf", "ngrams"]
     }
 
-
-# =========================
-# 🏥 Health Check
-# =========================
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({
-        "status": "AI API running 🔥"
+        "status": "AI API running"
     })
 
-
-# =========================
-# 🚫 Rate Limit Middleware
-# =========================
 @app.before_request
 def limit_requests():
     ip = request.remote_addr
@@ -92,10 +68,6 @@ def limit_requests():
             "error": "Too many requests"
         }), 429
 
-
-# =========================
-# 🔐 Predict API
-# =========================
 @app.route("/predict", methods=["POST"])
 def predict_route():
     start_time = time.time()
@@ -115,7 +87,6 @@ def predict_route():
         processing_time = int((time.time() - start_time) * 1000)
         result["processing_time"] = processing_time
 
-        # Logging
         logging.info(f"Request: {payload} | Result: {result['prediction_label']} | Risk: {result['risk_score']}")
 
         return jsonify(result)
@@ -124,9 +95,5 @@ def predict_route():
         logging.error(str(e))
         return jsonify({"error": "Internal server error"}), 500
 
-
-# =========================
-# 🚀 تشغيل السيرفر
-# =========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

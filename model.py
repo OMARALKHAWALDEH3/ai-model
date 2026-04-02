@@ -7,9 +7,6 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 
-# =========================
-# 🧹 تنظيف النص
-# =========================
 def clean_text(text):
     text = str(text).lower()
     text = re.sub(r"http\S+", "", text)
@@ -17,48 +14,32 @@ def clean_text(text):
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
-
-# =========================
-# 📥 تحميل البيانات
-# =========================
 df = pd.read_csv("big_data_final.csv")
-
 df = df.loc[:, ~df.columns.str.contains("^Unnamed")]
 
 if len(df.columns) >= 2:
     df = df.iloc[:, :2]
     df.columns = ["Type", "Payload"]
 
-print("\n📊 Data Preview:")
+print("\nData Preview:")
 print(df.head())
 print("\nColumns:", df.columns)
 print("Rows:", len(df))
 
-# =========================
-# تنظيف البيانات
-# =========================
 df = df.dropna().drop_duplicates()
-
 df["Type"] = df["Type"].astype(str).str.strip().str.lower()
 df["Payload"] = df["Payload"].astype(str).apply(clean_text)
 
-print("\n🧠 Class Distribution:")
+print("\nClass Distribution:")
 print(df["Type"].value_counts(normalize=True))
 
-# =========================
-# تحقق من normal
-# =========================
 if "normal" not in df["Type"].values and "benign" not in df["Type"].values:
-    print("\n⚠️ Adding synthetic normal data...")
     normal_samples = pd.DataFrame({
         "Payload": ["hello world", "home page", "login", "user profile"],
         "Type": ["normal"] * 4
     })
     df = pd.concat([df, normal_samples], ignore_index=True)
 
-# =========================
-# تقسيم البيانات
-# =========================
 X = df["Payload"]
 y = df["Type"]
 
@@ -66,9 +47,6 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
 )
 
-# =========================
-# 🔥 Feature Engineering
-# =========================
 vectorizer = TfidfVectorizer(
     max_features=8000,
     ngram_range=(1, 3),
@@ -79,43 +57,27 @@ vectorizer = TfidfVectorizer(
 X_train_vec = vectorizer.fit_transform(X_train)
 X_test_vec = vectorizer.transform(X_test)
 
-# =========================
-# 🤖 Model
-# =========================
 model = SGDClassifier(loss="log_loss")
 model.fit(X_train_vec, y_train)
 
-print("\n✅ Model trained successfully!")
+print("\nModel trained successfully!")
 
-# =========================
-# 📊 Evaluation
-# =========================
 y_pred = model.predict(X_test_vec)
 
-print("\n📊 Evaluation Results:")
+print("\nEvaluation Results:")
 print("Accuracy:", accuracy_score(y_test, y_pred))
 print("\nClassification Report:\n")
 print(classification_report(y_test, y_pred))
 
-# =========================
-# 💾 Save
-# =========================
 with open("model.pkl", "wb") as f:
     pickle.dump((model, vectorizer), f)
 
-print("\n💾 Model saved as model.pkl")
+print("\nModel saved as model.pkl")
 
-
-# =========================
-# 🔮 Predict (FINAL)
-# =========================
 def predict(text):
-    original_text = str(text).lower()  # 🔥 مهم
+    original_text = str(text).lower()
     text = clean_text(text)
 
-    # =========================
-    # 🔥 RULE OVERRIDE
-    # =========================
     if "login" in original_text and "password" in original_text:
         return {
             "risk_score": 5.0,
@@ -125,9 +87,6 @@ def predict(text):
             "features_used": ["rule_override_login"]
         }
 
-    # =========================
-    # 🤖 AI Prediction
-    # =========================
     X_input = vectorizer.transform([text])
     probs = model.predict_proba(X_input)[0]
     classes = model.classes_
@@ -136,9 +95,6 @@ def predict(text):
     prediction_label = str(classes[max_index])
     confidence = float(probs[max_index])
 
-    # =========================
-    # 🔥 Smart Risk Score (FINAL)
-    # =========================
     if prediction_label in ["normal", "benign"]:
         risk_score = round((1 - confidence) * 50, 2)
     else:
@@ -154,10 +110,6 @@ def predict(text):
         "features_used": ["tfidf_char_ngrams"]
     }
 
-
-# =========================
-# 🧪 Test
-# =========================
 if __name__ == "__main__":
     tests = [
         "SELECT * FROM users WHERE 1=1",
@@ -168,5 +120,5 @@ if __name__ == "__main__":
     ]
 
     for t in tests:
-        print("\n🧪", t)
+        print("\n", t)
         print(predict(t))
